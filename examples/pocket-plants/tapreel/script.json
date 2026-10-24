@@ -1,0 +1,35 @@
+{
+  "titleCard": 7.5,
+  "endCard": 9.0,
+  "intro": { "text": "Hi there. Meet Pocket Plants, the little app that remembers your watering for you.", "at": 1 },
+  "outro": { "text": "That's Pocket Plants. Happy plants, happy you.", "at": 1 },
+  "scenes": [
+    {
+      "id": "meet",
+      "title": "Who's thirsty?",
+      "lines": [
+        { "text": "This is your garden.", "hold": 0.8 },
+        { "text": "The yellow badges mean a plant needs water today.", "hold": 1.5 },
+        { "text": "Right now, that's the fern and the monstera.", "hold": 1.2 }
+      ]
+    },
+    {
+      "id": "water",
+      "title": "Water a plant",
+      "lines": [
+        { "text": "Tap the fern.", "hold": 0.8 },
+        { "text": "Then tap Mark watered.", "hold": 1.2 },
+        { "text": "Done. The next reminder is set for a week from now.", "hold": 2.0 }
+      ]
+    },
+    {
+      "id": "add",
+      "title": "Add a plant",
+      "lines": [
+        { "text": "Got a new plant? Tap Add plant.", "hold": 1.0 },
+        { "text": "Give it a name, and tap Save.", "hold": 2.5 },
+        { "text": "That's it. Your garden is covered.", "hold": 1.5 }
+      ]
+    }
+  ]
+}

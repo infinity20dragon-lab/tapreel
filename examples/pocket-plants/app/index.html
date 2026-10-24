@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pocket Plants</title>
+<style>
+  *{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,sans-serif;background:#f3f7f1;color:#16301f}
+  header{padding:22px 20px 14px;background:#1f5d3a;color:#fff}header h1{margin:0;font-size:26px}header p{margin:4px 0 0;opacity:.85}
+  main{padding:16px 16px 100px}.card{display:flex;align-items:center;gap:14px;background:#fff;border-radius:18px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(20,60,30,.08);width:100%;border:0;text-align:left;font:inherit;color:inherit}
+  .emoji{font-size:38px;width:56px;height:56px;border-radius:16px;background:#e6f2e3;display:flex;align-items:center;justify-content:center}
+  .name{font-weight:700;font-size:19px}.sub{opacity:.7;font-size:15px}.badge{margin-left:auto;font-size:14px;font-weight:700;padding:6px 12px;border-radius:999px}
+  .thirsty{background:#fde68a;color:#78350f}.ok{background:#d1fae5;color:#065f46}
+  .fab{position:fixed;left:16px;right:16px;bottom:18px;font-size:20px;font-weight:700;padding:16px;border:0;border-radius:16px;background:#1f5d3a;color:#fff}
+  .big{font-size:20px;font-weight:700;padding:16px;border:0;border-radius:16px;background:#1f5d3a;color:#fff;width:100%;margin-top:14px}
+  .ghost{background:#e6f2e3;color:#1f5d3a}input{width:100%;font-size:20px;padding:14px;border-radius:14px;border:2px solid #b7d3b0;margin-top:8px}label{font-weight:700}
+  .toast{margin-top:14px;padding:14px;border-radius:14px;background:#d1fae5;color:#065f46;font-weight:700}
+  .hero{font-size:84px;text-align:center;margin:10px 0}
+</style></head><body>
+<header><h1>🌿 Pocket Plants</h1><p id="summary"></p></header>
+<main id="view"></main>
+<script>
+  const plants=[{id:1,name:'Fern',emoji:'🌿',due:true},{id:2,name:'Cactus',emoji:'🌵',due:false},{id:3,name:'Monstera',emoji:'🪴',due:true}]
+  const view=document.getElementById('view'),summary=document.getElementById('summary')
+  const esc=(s)=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))
+  function list(msg){
+    const n=plants.filter(p=>p.due).length
+    summary.textContent=n?n+' plant'+(n>1?'s':'')+' need water today':'All plants are happy'
+    view.innerHTML=(msg?'<div class="toast">'+esc(msg)+'</div><div style="height:12px"></div>':'')+plants.map(p=>'<button class="card" data-id="'+p.id+'"><span class="emoji">'+p.emoji+'</span><span><div class="name">'+esc(p.name)+'</div><div class="sub">'+(p.due?'Last watered 7 days ago':'Watered 2 days ago')+'</div></span><span class="badge '+(p.due?'thirsty':'ok')+'">'+(p.due?'Thirsty':'Happy')+'</span></button>').join('')+'<button class="fab" id="add">+ Add plant</button>'
+    view.querySelectorAll('.card').forEach(b=>b.onclick=()=>detail(+b.dataset.id))
+    document.getElementById('add').onclick=add
+  }
+  function detail(id){
+    const p=plants.find(x=>x.id===id);summary.textContent=p.name
+    view.innerHTML='<div class="hero">'+p.emoji+'</div><div class="card"><span><div class="name">'+esc(p.name)+'</div><div class="sub">'+(p.due?'Needs water today':'Happy for now')+'</div></span></div><button class="big" id="water">💧 Mark watered</button><button class="big ghost" id="back">Back</button>'
+    document.getElementById('water').onclick=()=>{p.due=false;list(p.name+' watered. Next reminder in 7 days.')}
+    document.getElementById('back').onclick=()=>list()
+  }
+  function add(){
+    summary.textContent='New plant'
+    view.innerHTML='<label for="n">Plant name</label><input id="n" autocomplete="off"><button class="big" id="save" type="button">Save</button><button class="big ghost" id="cancel" type="button">Cancel</button>'
+    document.getElementById('save').onclick=()=>{const v=document.getElementById('n').value.trim()||'New plant';plants.push({id:Date.now(),name:v,emoji:'🌱',due:false});list(v+' added to your garden.')}
+    document.getElementById('cancel').onclick=()=>list()
+  }
+  list()
+</script></body></html>

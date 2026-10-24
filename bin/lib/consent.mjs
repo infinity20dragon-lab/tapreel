@@ -15,6 +15,18 @@ const relevant = (a) => ({
   dataChanges: a.dataChanges,
   headless: a.headless,
 })
+/** An allowed origin is scheme + host + port ("https://app.example.com"), never a path: every page of an allowed site is allowed.
+ *  "https://*.example.com" allows that site and all of its subdomains (but not other domains that merely end the same way). */
+export function originAllowed(list, origin) {
+  const o = new URL(origin)
+  return list.some((entry) => {
+    const star = entry.match(/^(https?):\/\/\*\.([^/:]+)(:\d+)?$/)
+    if (!star) return entry === o.origin
+    const [, scheme, base, port] = star
+    return o.protocol === `${scheme}:` && (o.hostname === base || o.hostname.endsWith('.' + base)) && (port ?? '') === (o.port ? `:${o.port}` : '')
+  })
+}
+
 export const fingerprint = (a = cfg.access) => createHash('sha256').update(JSON.stringify(relevant(a))).digest('hex').slice(0, 16)
 
 const DATA = {
@@ -40,7 +52,7 @@ export function problems(a = cfg.access) {
   const p = []
   if (!a.baseUrl) p.push('access.baseUrl is not set')
   if (!a.allowedOrigins.length) p.push('access.allowedOrigins is empty')
-  else if (a.baseUrl && !a.allowedOrigins.includes(new URL(a.baseUrl).origin)) p.push('access.allowedOrigins must include the origin of baseUrl')
+  else if (a.baseUrl && !originAllowed(a.allowedOrigins, new URL(a.baseUrl).origin)) p.push('access.allowedOrigins must include the origin of baseUrl')
   if (a.mode === 'demo-account' && !a.accountIsDemo) p.push("access.accountIsDemo must be true: Tapreel only signs in with a demo account, never a real person's")
   if (!['demo-account', 'public'].includes(a.mode)) p.push('access.mode must be "demo-account" or "public"')
   if (a.dataChanges === 'restored-by-hooks') p.push('__hooks__')

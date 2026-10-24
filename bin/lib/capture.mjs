@@ -45,8 +45,11 @@ export class Capture {
       void cdp.send('Page.screencastFrameAck', { sessionId: f.sessionId }).catch(() => undefined)
     })
     await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 90, maxWidth: this.size.w, maxHeight: this.size.h, everyNthFrame: 1 })
-    const shot = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 90 }) // a still screen sends nothing
-    if (this.running) this.save(shot.data, Date.now() / 1000 - this.t0)
+    // A still screen sends no frames, so take one now. If the browser refuses, the first screencast frame stands in.
+    try {
+      const shot = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 90 })
+      if (this.running) this.save(shot.data, Date.now() / 1000 - this.t0)
+    } catch {}
   }
   async detach() {
     if (!this.cdp) return

@@ -9,7 +9,7 @@ export const root = projectRoot
 export const videoDir = vdir
 export const audioDir = resolve(videoDir, 'audio')
 
-export const loadScript = () => JSON.parse(readFileSync(resolve(videoDir, 'script.json'), 'utf8'))
+export const loadScript = () => ({ titleCard: 7.5, endCard: 9, sceneGap: 1.2, ...JSON.parse(readFileSync(resolve(videoDir, 'script.json'), 'utf8')) })
 
 // ---- pacing model (used for estimates, and to weight cues inside a unit) ------------------------
 export const SYL_PER_SEC = 3.7

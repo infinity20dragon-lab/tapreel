@@ -1,0 +1,19 @@
+{
+  "slug": "pocket-plants-how-to",
+  "app": { "name": "Pocket Plants", "subtitle": "Quick start", "url": "https://pocketplants.example", "org": "A Tapreel sample film", "icon": "🌿" },
+  "introChips": ["See what's thirsty", "Mark watered", "Add a plant"],
+  "outroChips": ["Water", "Add", "Relax"],
+  "outroHelp": "An imaginary app, filmed with Tapreel.",
+  "qrLabel": "Scan to open",
+  "brand": { "accent": "#1f7a4d", "accentLight": "#a7f3d0", "glow": "#34d399", "bg": "#0a1a14", "muted": "#8fb5a3" },
+  "voice": { "profileId": "", "language": "English" },
+  "masks": [],
+  "access": {
+    "mode": "public",
+    "baseUrl": "http://localhost:4321",
+    "allowedOrigins": ["http://localhost:4321"],
+    "accountIsDemo": false,
+    "dataChanges": "none",
+    "headless": true
+  }
+}

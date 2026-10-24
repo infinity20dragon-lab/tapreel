@@ -8,7 +8,7 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { cfg, videoDir, workDir } from './lib/config.mjs'
-import { assertConsent, problems } from './lib/consent.mjs'
+import { assertConsent, problems, originAllowed } from './lib/consent.mjs'
 import { overlayScript } from './lib/overlay.mjs'
 import { Capture, SceneClock, glide, loadTimeline, overlay, ring, safe, tap, typeSlowly } from './lib/capture.mjs'
 
@@ -30,7 +30,6 @@ export async function record({ scenes: only } = {}) {
 
   const { chromium } = await import('playwright')
   const tl = loadTimeline()
-  const allowed = new Set(a.allowedOrigins)
   const device = { ...cfg.device, baseURL: a.baseUrl, serviceWorkers: 'block' }
   const vp = cfg.device.viewport
   const size = { w: vp.width * cfg.device.deviceScaleFactor, h: vp.height * cfg.device.deviceScaleFactor }
@@ -38,6 +37,7 @@ export async function record({ scenes: only } = {}) {
   const browser = await chromium.launch({ headless: a.headless })
   mkdirSync(workDir, { recursive: true })
   const authFile = join(workDir, 'auth.json')
+  const blocked = new Set()
 
   const newContext = async (withLogin) => {
     const ctx = await browser.newContext({ ...device, ...(withLogin ? { storageState: authFile } : {}) })
@@ -51,7 +51,9 @@ export async function record({ scenes: only } = {}) {
       } catch {
         return route.abort()
       }
-      return allowed.has(origin) ? route.continue() : route.abort()
+      if (originAllowed(a.allowedOrigins, origin)) return route.continue()
+      blocked.add(origin)
+      return route.abort()
     })
     await ctx.addInitScript(script)
     return ctx
@@ -94,5 +96,8 @@ export async function record({ scenes: only } = {}) {
   } finally {
     if (hooks.after) await hooks.after({ cfg }).catch((e) => console.error('after() failed:', e.message))
     await browser.close()
+    if (blocked.size) console.log(`
+Blocked (not in access.allowedOrigins): ${[...blocked].join(', ')}
+If the app needs one to look right, ask the app owner, add it to the config and approve again with: tapreel consent`)
   }
 }
