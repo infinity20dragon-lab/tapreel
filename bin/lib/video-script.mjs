@@ -3,13 +3,13 @@
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 
-export const root = resolve(fileURLToPath(new URL('.', import.meta.url)), '../..')
-export const videoDir = resolve(root, 'docs/video')
+import { projectRoot, videoDir as vdir, cfg } from './config.mjs'
+export const root = projectRoot
+export const videoDir = vdir
 export const audioDir = resolve(videoDir, 'audio')
 
-export const loadScript = () => JSON.parse(readFileSync(resolve(videoDir, 'crew-how-to.script.json'), 'utf8'))
+export const loadScript = () => JSON.parse(readFileSync(resolve(videoDir, 'script.json'), 'utf8'))
 
 // ---- pacing model (used for estimates, and to weight cues inside a unit) ------------------------
 export const SYL_PER_SEC = 3.7
@@ -38,18 +38,16 @@ export function speechSeconds(say) {
 
 export const afterPause = (text) => AFTER[text.trim().slice(-1)] ?? AFTER_DEFAULT
 
-// "Crew Narrator - Man young (high)": a male voice designed inside VoiceStudio (young adult, American accent, about
-// 150 Hz) and modelled on no real person. Swap the id to change the voice (list: GET http://localhost:3900/profiles).
-// For a real human voice, clone one: POST /profiles with kind=clone, a 10-20 s recording and its transcript, from
-// someone who has agreed to it, then put that profile id here.
-export const VOICE = { profile_id: '9a16e424', language: 'English' }
+// The narrator is a VoiceStudio profile (list: GET http://localhost:3900/profiles), set in tapreel.config.json as
+// voice.profileId. For a real human voice, clone one with the person's consent (POST /profiles, kind=clone).
+export const VOICE = { profile_id: cfg.voice.profileId, language: cfg.voice.language }
 
 // How each phrase is rendered. Maximum steps and the unprocessed preset: the default "broadcast" preset compresses
 // and brightens the voice into an obvious radio sound. The engine's natural pace is fast (about 220 wpm), so a gentle
 // speed below 1 is used, and any further correction is made by choosing between takes, never by stretching audio.
 // Bump to render every phrase again (4: takes with a stray burst are rejected instead of being cut).
-export const TAKE_VERSION = 3
-export const RENDER = { num_step: 64, effect_preset: 'raw', denoise: 'true', guidance_scale: 2, speed: 0.72 }
+export const TAKE_VERSION = 4
+export const RENDER = { num_step: 64, effect_preset: 'raw', denoise: 'true', guidance_scale: 2, speed: 0.72, ...cfg.render }
 
 // ---- spoken units -------------------------------------------------------------------------------
 // A unit is one sentence: consecutive cues up to the one that ends in . ? or !. Speaking a whole

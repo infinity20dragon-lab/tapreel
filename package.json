@@ -1,0 +1,9 @@
+{
+  "name": "tapreel",
+  "version": "0.1.0",
+  "description": "Narrated how-to videos of any web app.",
+  "type": "module",
+  "bin": { "tapreel": "bin/tapreel.mjs" },
+  "license": "MIT",
+  "dependencies": { "playwright": "^1.48.0", "qrcode": "^1.5.4" }
+}

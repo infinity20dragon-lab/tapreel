@@ -1,26 +1,29 @@
-// Turns the recorder's frames (tests/e2e/crew-video.spec.ts -> video-work/<scene>/) into the finished film.
+// Turns the recorder's frames (tapreel record -> .tapreel-work/<scene>/) into the finished film.
 //
-//   node scripts/build-video.mjs clips            frames -> video-work/<scene>/raw.mp4 (30 fps, real timing)
-//   node scripts/build-video.mjs sheet <scene>    contact sheet PNG of a scene, for a quick look
-//   node scripts/build-video.mjs assets           backgrounds, phone frame, animated intro and outro
-//   node scripts/build-video.mjs compose          each chapter and the full film
-//   node scripts/build-video.mjs                  all of the above
+//   node tapreel.mjs build clips            frames -> <work>/<scene>/raw.mp4 (30 fps, real timing)
+//   node tapreel.mjs build sheet <scene>    contact sheet PNG of a scene, for a quick look
+//   node tapreel.mjs build assets           backgrounds, phone frame, animated intro and outro
+//   node tapreel.mjs build compose          each chapter and the full film
+//   node tapreel.mjs build                  all of the above
 //
 // Layout (1920x1080): the phone on the left in a device frame, the narration as large captions on the right, a chapter
 // label and progress at the top. Captions are burned in from the same timeline as the narration audio.
-// Output: docs/video/out/ (git-ignored).
+// Output: <project>/tapreel/out/ (git-ignored).
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync, rmSync } from 'node:fs'
 import { resolve, join } from 'node:path'
 import { createRequire } from 'node:module'
 import { spawnSync } from 'node:child_process'
 import { ffmpeg, ffprobePath } from './lib/ffmpeg.mjs'
 import { root, videoDir, audioDir } from './lib/video-script.mjs'
+import { cfg, workDir, hex, rgba, assColor } from './lib/config.mjs'
 
-export const work = resolve(root, 'video-work')
+export const work = workDir
 const compose = join(work, 'compose')
 const out = join(videoDir, 'out')
 const FPS = 30
-const NAVY = '0b1220'
+const B = cfg.brand
+const NAVY = hex(B.bg)
+const APP = cfg.app
 const SCREEN = { x: 230, y: 70, w: 434, h: 940 } // where the phone screen sits on the 1920x1080 canvas
 const CAP_X = 820 // left edge of the caption column
 const timeline = () => JSON.parse(readFileSync(join(videoDir, 'timeline.json'), 'utf8'))
@@ -57,37 +60,38 @@ export function contactSheet(id, cols = 6, rows = 3) {
 }
 
 // ---- assets (drawn with the browser) ------------------------------------------------------------
-const FONT = `'Segoe UI', system-ui, sans-serif`
+const FONT = `'${cfg.fonts.ui}', system-ui, sans-serif`
+const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+const chipsHtml = (list) => list.map((c) => `<span class="chip" style="opacity:0">${esc(c)}</span>`).join('')
 
 function bgHtml(n, total, title) {
-  const pills = Array.from({ length: total }, (_, i) => `<span style="width:${i + 1 === n ? 64 : 28}px;height:10px;border-radius:5px;background:${i + 1 === n ? '#f87171' : 'rgba(148,163,184,.35)'}"></span>`).join('')
+  const pills = Array.from({ length: total }, (_, i) => `<span style="width:${i + 1 === n ? 64 : 28}px;height:10px;border-radius:5px;background:${i + 1 === n ? '${B.glow}' : 'rgba(148,163,184,.35)'}"></span>`).join('')
   return `<body style="margin:0;width:1920px;height:1080px;overflow:hidden;font-family:${FONT};color:#fff;background:#${NAVY}">
-  <div style="position:absolute;inset:0;background:radial-gradient(900px 900px at 450px 540px,rgba(153,27,27,.42),rgba(153,27,27,0) 70%),linear-gradient(135deg,#0b1220,#101a30 60%,#0b1220)"></div>
-  <div style="position:absolute;left:0;top:0;bottom:0;width:10px;background:#991b1b"></div>
+  <div style="position:absolute;inset:0;background:radial-gradient(900px 900px at 450px 540px,${rgba(B.accent,.42)},${rgba(B.accent,0)} 70%),linear-gradient(135deg,#${NAVY},#${NAVY} 60%,#${NAVY})"></div>
+  <div style="position:absolute;left:0;top:0;bottom:0;width:10px;background:${B.accent}"></div>
   <div style="position:absolute;left:${CAP_X}px;top:30px;display:flex;align-items:center;gap:14px;font-size:30px;font-weight:700">
-    <span style="width:46px;height:46px;border-radius:14px;background:#991b1b;display:inline-flex;align-items:center;justify-content:center;font-size:26px">🚒</span>
-    <span>HydrantCheck <span style="color:#94a3b8;font-weight:500">· Station Crew Guide</span></span></div>
-  <div style="position:absolute;left:${CAP_X}px;top:104px;font-size:26px;letter-spacing:.16em;text-transform:uppercase;color:#fca5a5;font-weight:700">Chapter ${n} of ${total} &nbsp;·&nbsp; <span style="color:#e2e8f0">${title}</span></div>
+    <span style="width:46px;height:46px;border-radius:14px;background:${B.accent};display:inline-flex;align-items:center;justify-content:center;font-size:26px">${esc(APP.icon)}</span>
+    <span>${esc(APP.name)} <span style="color:${B.muted};font-weight:500">· ${esc(APP.subtitle)}</span></span></div>
+  <div style="position:absolute;left:${CAP_X}px;top:104px;font-size:26px;letter-spacing:.16em;text-transform:uppercase;color:${B.accentLight};font-weight:700">Chapter ${n} of ${total} &nbsp;·&nbsp; <span style="color:#e2e8f0">${title}</span></div>
   <div style="position:absolute;left:${CAP_X}px;bottom:62px;display:flex;gap:10px;align-items:center">${pills}</div>
-  <div style="position:absolute;right:70px;bottom:52px;font-size:26px;color:#94a3b8;letter-spacing:.04em">hydrants.ismfd.com</div></body>`
+  <div style="position:absolute;right:70px;bottom:52px;font-size:26px;color:${B.muted};letter-spacing:.04em">${esc(APP.url.replace(/^https?:\/\//, ''))}</div></body>`
 }
 
 const bezelHtml = () => {
   const b = 14
   return `<body style="margin:0;width:1920px;height:1080px;background:transparent;overflow:hidden">
-  <div style="position:absolute;left:${SCREEN.x - b}px;top:${SCREEN.y - b}px;width:${SCREEN.w}px;height:${SCREEN.h}px;border:${b}px solid #0a0f1c;border-radius:62px;box-shadow:0 0 0 2px #334155,0 40px 90px rgba(0,0,0,.6),0 0 120px rgba(153,27,27,.18)"></div></body>`
+  <div style="position:absolute;left:${SCREEN.x - b}px;top:${SCREEN.y - b}px;width:${SCREEN.w}px;height:${SCREEN.h}px;border:${b}px solid #0a0f1c;border-radius:62px;box-shadow:0 0 0 2px #334155,0 40px 90px rgba(0,0,0,.6),0 0 120px ${rgba(B.accent,.18)}"></div></body>`
 }
 
 const introHtml = () => `<body style="margin:0;width:1920px;height:1080px;overflow:hidden;background:#${NAVY};font-family:${FONT};color:#fff">
-  <div id="glow" style="position:absolute;left:50%;top:44%;width:1500px;height:1500px;margin:-750px 0 0 -750px;background:radial-gradient(closest-side,rgba(153,27,27,.6),rgba(153,27,27,0));opacity:0"></div>
+  <div id="glow" style="position:absolute;left:50%;top:44%;width:1500px;height:1500px;margin:-750px 0 0 -750px;background:radial-gradient(closest-side,${rgba(B.accent,.6)},${rgba(B.accent,0)});opacity:0"></div>
   <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-    <div id="badge" style="width:200px;height:200px;border-radius:56px;background:#991b1b;display:flex;align-items:center;justify-content:center;font-size:116px;box-shadow:0 0 0 20px rgba(254,202,202,.15),0 30px 80px rgba(0,0,0,.5);opacity:0">🚒</div>
-    <div id="title" style="margin-top:50px;font-size:140px;font-weight:700;letter-spacing:-3px;opacity:0">HydrantCheck</div>
-    <div id="sub" style="margin-top:4px;font-size:56px;font-weight:600;color:#fca5a5;opacity:0">Station Crew Guide</div>
-    <div style="margin-top:58px;display:flex;gap:20px">
-      <span class="chip" style="opacity:0">Inspect hydrants</span><span class="chip" style="opacity:0">Fix addresses</span><span class="chip" style="opacity:0">Works with no signal</span></div>
+    <div id="badge" style="width:200px;height:200px;border-radius:56px;background:${B.accent};display:flex;align-items:center;justify-content:center;font-size:116px;box-shadow:0 0 0 20px rgba(254,202,202,.15),0 30px 80px rgba(0,0,0,.5);opacity:0">${esc(APP.icon)}</div>
+    <div id="title" style="margin-top:50px;font-size:140px;font-weight:700;letter-spacing:-3px;opacity:0">${esc(APP.name)}</div>
+    <div id="sub" style="margin-top:4px;font-size:56px;font-weight:600;color:${B.accentLight};opacity:0">${esc(APP.subtitle)}</div>
+    <div style="margin-top:58px;display:flex;gap:20px">${chipsHtml(cfg.introChips)}</div>
   </div>
-  <div id="foot" style="position:absolute;left:0;right:0;bottom:60px;text-align:center;font-size:30px;color:#94a3b8;letter-spacing:.16em;text-transform:uppercase;opacity:0">Southern Marin Fire Protection District</div>
+  <div id="foot" style="position:absolute;left:0;right:0;bottom:60px;text-align:center;font-size:30px;color:${B.muted};letter-spacing:.16em;text-transform:uppercase;opacity:0">${esc(APP.org)}</div>
   <div id="fade" style="position:absolute;inset:0;background:#${NAVY};opacity:0"></div>
   <style>.chip{padding:14px 30px;border-radius:999px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.16);font-size:34px;font-weight:600}</style>
   <script>
@@ -106,17 +110,17 @@ const introHtml = () => `<body style="margin:0;width:1920px;height:1080px;overfl
   </script></body>`
 
 const outroHtml = (qrSvg) => `<body style="margin:0;width:1920px;height:1080px;overflow:hidden;background:#${NAVY};font-family:${FONT};color:#fff">
-  <div id="glow" style="position:absolute;left:30%;top:50%;width:1500px;height:1500px;margin:-750px 0 0 -750px;background:radial-gradient(closest-side,rgba(153,27,27,.5),rgba(153,27,27,0));opacity:0"></div>
+  <div id="glow" style="position:absolute;left:30%;top:50%;width:1500px;height:1500px;margin:-750px 0 0 -750px;background:radial-gradient(closest-side,${rgba(B.accent,.5)},${rgba(B.accent,0)});opacity:0"></div>
   <div style="position:absolute;left:150px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;width:1000px">
-    <div id="a" style="font-size:108px;font-weight:700;letter-spacing:-2px;opacity:0">That's HydrantCheck.</div>
+    <div id="a" style="font-size:108px;font-weight:700;letter-spacing:-2px;opacity:0">${esc(cfg.outroTitle ?? `That's ${APP.name}.`)}</div>
     <div id="chips" style="margin-top:36px;display:flex;gap:16px">
-      <span class="chip" style="opacity:0">Inspect</span><span class="chip" style="opacity:0">Fix addresses</span><span class="chip" style="opacity:0">Offline mode</span></div>
-    <div id="url" style="margin-top:64px;font-size:84px;font-weight:700;color:#fca5a5;opacity:0">hydrants.ismfd.com</div>
-    <div id="help" style="margin-top:26px;font-size:44px;font-weight:500;color:#e2e8f0;opacity:0;line-height:1.3">Stuck? Ask your station officer or Prevention.</div>
+      ${chipsHtml(cfg.outroChips)}</div>
+    <div id="url" style="margin-top:64px;font-size:84px;font-weight:700;color:${B.accentLight};opacity:0">${esc(APP.url.replace(/^https?:\/\//, ''))}</div>
+    <div id="help" style="margin-top:26px;font-size:44px;font-weight:500;color:#e2e8f0;opacity:0;line-height:1.3">${esc(cfg.outroHelp)}</div>
   </div>
   <div id="qr" style="position:absolute;right:190px;top:50%;margin-top:-210px;width:420px;height:420px;border-radius:36px;background:#fff;padding:26px;box-sizing:border-box;box-shadow:0 30px 80px rgba(0,0,0,.5);opacity:0">${qrSvg}
-    <div style="position:absolute;left:0;right:0;bottom:-62px;text-align:center;font-size:28px;color:#94a3b8">Scan to open</div></div>
-  <div id="foot" style="position:absolute;left:0;right:0;bottom:52px;text-align:center;font-size:26px;color:#64748b;letter-spacing:.12em;text-transform:uppercase;opacity:0">Southern Marin Fire Protection District</div>
+    <div style="position:absolute;left:0;right:0;bottom:-62px;text-align:center;font-size:28px;color:${B.muted}">${esc(cfg.qrLabel)}</div></div>
+  <div id="foot" style="position:absolute;left:0;right:0;bottom:52px;text-align:center;font-size:26px;color:#64748b;letter-spacing:.12em;text-transform:uppercase;opacity:0">${esc(APP.org)}</div>
   <div id="fade" style="position:absolute;inset:0;background:#000;opacity:1"></div>
   <style>.chip{padding:12px 26px;border-radius:999px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.16);font-size:32px;font-weight:600}svg{width:100%;height:100%}</style>
   <script>
@@ -135,7 +139,7 @@ const outroHtml = (qrSvg) => `<body style="margin:0;width:1920px;height:1080px;o
   </script></body>`
 
 async function renderAssets() {
-  const { chromium } = await import('@playwright/test')
+  const { chromium } = await import('playwright')
   const tl = timeline()
   mkdirSync(compose, { recursive: true })
   const browser = await chromium.launch()
@@ -149,9 +153,8 @@ async function renderAssets() {
   await page.screenshot({ path: join(compose, 'bezel.png'), omitBackground: true })
 
   // QR code to the app, for the outro
-  const wrk = createRequire(join(work, 'x.js'))
-  const QR = wrk('qrcode')
-  const qrSvg = await QR.toString('https://hydrants.ismfd.com', { type: 'svg', margin: 0, color: { dark: `#${NAVY}`, light: '#ffffff' } })
+  const QR = createRequire(import.meta.url)('qrcode')
+  const qrSvg = await QR.toString(APP.url || 'https://example.com', { type: 'svg', margin: 0, color: { dark: `#${NAVY}`, light: '#ffffff' } })
 
   for (const [name, html, seconds] of [['intro', introHtml(), tl.titleCard], ['outro', outroHtml(qrSvg), tl.endCard]]) {
     const dir = join(compose, `${name}-frames`)
@@ -171,8 +174,8 @@ async function renderAssets() {
   await browser.close()
   // fonts for the burned-in captions (libass reads them from a folder)
   mkdirSync(join(compose, 'fonts'), { recursive: true })
-  for (const f of ['segoeui.ttf', 'segoeuib.ttf', 'seguisb.ttf']) {
-    const src = join('C:/Windows/Fonts', f)
+  for (const f of cfg.fonts.files) {
+    const src = join(cfg.fonts.dir, f)
     if (existsSync(src)) copyFileSync(src, join(compose, 'fonts', f))
   }
 }
@@ -197,9 +200,9 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Cap,Segoe UI Semibold,68,&H00FFFFFF,&H00FFFFFF,&H00000000,&H78000000,0,0,0,0,100,100,0,0,1,0,3,4,${CAP_X},150,0,1
-Style: Eyebrow,Segoe UI,34,&H00A5A5FC,&H00A5A5FC,&H00000000,&H00000000,-1,0,0,0,100,100,6,0,1,0,0,4,${CAP_X},100,0,1
-Style: Title,Segoe UI,112,&H00FFFFFF,&H00FFFFFF,&H00000000,&H78000000,-1,0,0,0,100,100,0,0,1,0,4,4,${CAP_X},100,0,1
+Style: Cap,${cfg.fonts.caption},68,&H00FFFFFF,&H00FFFFFF,&H00000000,&H78000000,0,0,0,0,100,100,0,0,1,0,3,4,${CAP_X},150,0,1
+Style: Eyebrow,${cfg.fonts.ui},34,${assColor(B.accentLight)},${assColor(B.accentLight)},&H00000000,&H00000000,-1,0,0,0,100,100,6,0,1,0,0,4,${CAP_X},100,0,1
+Style: Title,${cfg.fonts.ui},112,&H00FFFFFF,&H00FFFFFF,&H00000000,&H78000000,-1,0,0,0,100,100,0,0,1,0,4,4,${CAP_X},100,0,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -275,18 +278,18 @@ function composeAll() {
     console.log(`stream copy gave ${probed.toFixed(2)}s, expected ${tl.filmEnd.toFixed(2)}s; re-encoding the join`)
     ffmpeg(['-f', 'concat', '-safe', '0', '-i', 'film.txt', '-c:v', 'libx264', '-crf', '15', '-preset', 'medium', '-pix_fmt', 'yuv420p', '-r', String(FPS), 'film-video.mp4'], { cwd: compose })
   }
-  const master = join(audioDir, 'crew-how-to.narration.wav')
+  const master = join(audioDir, `${cfg.slug}.narration.wav`)
   ffmpeg(
     [
       '-i', 'film-video.mp4', '-i', master,
       '-filter_complex', `[1:a]afade=t=out:st=${(tl.filmEnd - 1.2).toFixed(3)}:d=1.2,${loudnorm()}[a]`,
-      '-map', '0:v', '-map', '[a]', '-t', tl.filmEnd.toFixed(3), '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', join(out, 'HydrantCheck-Crew-How-To.mp4'),
+      '-map', '0:v', '-map', '[a]', '-t', tl.filmEnd.toFixed(3), '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', join(out, `${cfg.slug}.mp4`),
     ],
     { cwd: compose },
   )
-  copyFileSync(join(videoDir, 'crew-how-to.srt'), join(out, 'HydrantCheck-Crew-How-To.srt'))
+  copyFileSync(join(videoDir, `${cfg.slug}.srt`), join(out, `${cfg.slug}.srt`))
   ffmpeg(['-ss', '3.2', '-i', join(compose, 'intro.mp4'), '-frames:v', '1', join(out, 'poster.png')])
-  console.log('film', join(out, 'HydrantCheck-Crew-How-To.mp4'))
+  console.log('film', join(out, `${cfg.slug}.mp4`))
 }
 
 // ---- CLI ----------------------------------------------------------------------------------------

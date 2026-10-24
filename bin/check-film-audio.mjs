@@ -7,8 +7,9 @@ import { tmpdir } from 'node:os'
 import { ffmpeg } from './lib/ffmpeg.mjs'
 import { transcribe, tokens } from './lib/voicestudio.mjs'
 import { videoDir } from './lib/video-script.mjs'
+import { cfg } from './lib/config.mjs'
 
-const film = resolve(process.argv[2] ?? join(videoDir, 'out', 'HydrantCheck-Crew-How-To.mp4'))
+const film = resolve(process.argv[2] ?? join(videoDir, 'out', `${cfg.slug}.mp4`))
 const tl = JSON.parse(readFileSync(join(videoDir, 'timeline.json'), 'utf8'))
 const tmp = mkdtempSync(join(tmpdir(), 'fa-'))
 

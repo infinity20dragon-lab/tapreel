@@ -1,0 +1,16 @@
+{
+  "titleCard": 7.5,
+  "endCard": 9.0,
+  "intro": { "text": "Hey there. Let's take a quick look at My App.", "at": 1 },
+  "outro": { "text": "That's My App. Thanks for watching.", "at": 1 },
+  "scenes": [
+    {
+      "id": "welcome",
+      "title": "Welcome",
+      "lines": [
+        { "text": "This is the home screen.", "hold": 1.0 },
+        { "text": "Everything you need is one tap away.", "hold": 1.5 }
+      ]
+    }
+  ]
+}

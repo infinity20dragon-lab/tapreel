@@ -150,7 +150,7 @@ export function pitchSpread(s, rate = RATE) {
 // ---- reading the transcript ---------------------------------------------------------------------
 const NUM = { 0: 'zero', 1: 'one', 2: 'two', 3: 'three', 4: 'four', 19: 'nineteen' }
 export function tokens(s) {
-  const raw = s.toLowerCase().replace(/hydrantcheck/g, 'hydrant check').replace(/['’]/g, '').replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean).filter((t) => t !== 'dot').map((t) => NUM[t] ?? t)
+  const raw = s.toLowerCase().replace(/['’]/g, '').replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean).filter((t) => t !== 'dot').map((t) => NUM[t] ?? t)
   const out = []
   let inLetters = false
   for (const t of raw) {

@@ -1,4 +1,4 @@
-// Renders the crew how-to narration with the local VoiceStudio app and assembles it on the film's timeline.
+// Renders the narration with the local VoiceStudio app and assembles it on the film's timeline.
 //
 //   node scripts/build-narration.mjs                synthesize (cached) -> timeline -> mix
 //   node scripts/build-narration.mjs --synth-only
@@ -14,7 +14,7 @@
 //     never time-stretched afterwards, because that is what makes speech sound processed and the pace seem to wander;
 //   * each take is transcribed by Whisper large with word timestamps and rejected for a stutter, an echoed or dropped
 //     word, a stall, a dropout, a flat monotone delivery, or running past the room its caption leaves;
-//   * the winner is trimmed, levelled and written to docs/video/audio/cues/<id>.wav.
+//   * the winner is trimmed, levelled and written to <project>/tapreel/audio/cues/<id>.wav.
 // The phrase is placed where its caption starts. The timeline (scene and sentence lengths) is frozen in
 // audio/slots.json, so the screen recording never has to be redone when the narration changes.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
@@ -22,6 +22,7 @@ import { resolve, dirname } from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { loadScript, phrases, VOICE, RENDER, root, audioDir, videoDir, syllables } from './lib/video-script.mjs'
+import { cfg } from './lib/config.mjs'
 import { generate, transcribe, readWav, writeWav, speechBounds, pitchSpread, judgeWords, noiseFloorDb, strayBursts, RATE } from './lib/voicestudio.mjs'
 import { ffmpeg } from './lib/ffmpeg.mjs'
 
@@ -55,8 +56,8 @@ function windows(list) {
       out[`${s.id}-${String(i + 1).padStart(2, '0')}`] = (i + 1 < cs.length ? cs[i + 1].start - 0.1 : s.end - 0.4) - c.start
     })
   }
-  out.intro = tl.titleCard + 2.2 - 0.4 - (JSON.parse(readFileSync(resolve(videoDir, 'crew-how-to.script.json'), 'utf8')).intro?.at ?? 1)
-  out.outro = tl.endCard - 1.0 - (JSON.parse(readFileSync(resolve(videoDir, 'crew-how-to.script.json'), 'utf8')).outro?.at ?? 1)
+  out.intro = tl.titleCard + 2.2 - 0.4 - (JSON.parse(readFileSync(resolve(videoDir, 'script.json'), 'utf8')).intro?.at ?? 1)
+  out.outro = tl.endCard - 1.0 - (JSON.parse(readFileSync(resolve(videoDir, 'script.json'), 'utf8')).outro?.at ?? 1)
   return Object.fromEntries(list.map((p) => [p.id, out[p.id] ?? 8]))
 }
 
@@ -205,7 +206,7 @@ function mix() {
   // Gentle mastering only: remove rumble, tame the loudest syllables a little, never clip. Loudness is set at the end.
   const raw = resolve(audioDir, 'master-raw.wav')
   writeFileSync(raw, writeWav(master.subarray(0, Math.ceil(tl.filmEnd * RATE))))
-  const mastered = resolve(audioDir, 'crew-how-to.narration.wav')
+  const mastered = resolve(audioDir, `${cfg.slug}.narration.wav`)
   ffmpeg(['-i', raw, '-af', 'highpass=f=70,acompressor=threshold=0.09:ratio=2:attack=12:release=180:makeup=1.2,alimiter=limit=0.93', '-ar', String(RATE), '-ac', '1', '-c:a', 'pcm_s16le', mastered])
   const m = readWav(readFileSync(mastered)).samples
   tl.scenes.forEach((s, i) => {
@@ -215,7 +216,7 @@ function mix() {
   })
   let peak = 0
   for (const v of m) peak = Math.max(peak, Math.abs(v))
-  log(`Mixed ${tl.cueAudio.length} phrases into crew-how-to.narration.wav (${(tl.filmEnd / 60).toFixed(2)} min, ${RATE} Hz mono, peak ${(20 * Math.log10(peak)).toFixed(1)} dBFS) and ${tl.scenes.length} chapter tracks. Noise floor ${noiseFloorDb(m.subarray(Math.round(0.1 * RATE), Math.round(1.0 * RATE))).toFixed(0)} dBFS before the first word.`)
+  log(`Mixed ${tl.cueAudio.length} phrases into ${cfg.slug}.narration.wav (${(tl.filmEnd / 60).toFixed(2)} min, ${RATE} Hz mono, peak ${(20 * Math.log10(peak)).toFixed(1)} dBFS) and ${tl.scenes.length} chapter tracks. Noise floor ${noiseFloorDb(m.subarray(Math.round(0.1 * RATE), Math.round(1.0 * RATE))).toFixed(0)} dBFS before the first word.`)
 }
 
 const rebuildSrt = () => execFileSync(process.execPath, [resolve(dirname(fileURLToPath(import.meta.url)), 'build-video-srt.mjs')], { stdio: 'inherit', cwd: root })

@@ -1,0 +1,21 @@
+{
+  "slug": "my-app-how-to",
+  "app": { "name": "My App", "subtitle": "Quick start guide", "url": "https://app.example.com", "org": "Your organisation", "icon": "▶" },
+  "introChips": ["Sign in", "Do the main thing", "Get help"],
+  "outroChips": ["Sign in", "Do the main thing"],
+  "outroHelp": "Stuck? Ask your team lead.",
+  "brand": { "accent": "#2563eb", "accentLight": "#bfdbfe", "glow": "#60a5fa", "bg": "#0b1220", "muted": "#94a3b8" },
+  "voice": { "profileId": "", "language": "English" },
+  "masks": [],
+  "access": {
+    "mode": "demo-account",
+    "baseUrl": "https://app.example.com",
+    "allowedOrigins": ["https://app.example.com"],
+    "loginUrl": "/login",
+    "usernameEnv": "TAPREEL_USER",
+    "passwordEnv": "TAPREEL_PASS",
+    "accountIsDemo": false,
+    "dataChanges": "none",
+    "headless": true
+  }
+}
