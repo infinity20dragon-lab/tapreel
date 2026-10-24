@@ -1,0 +1,7 @@
+{
+  "name": "tapreel",
+  "owner": { "name": "ITforFire" },
+  "plugins": [
+    { "name": "tapreel", "source": "./", "description": "Narrated how-to videos of any web app." }
+  ]
+}
