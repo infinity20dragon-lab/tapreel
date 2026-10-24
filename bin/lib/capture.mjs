@@ -131,10 +131,18 @@ export async function ring(page, target, label, ms = 2400, num) {
   await v(page, 'ring', [box, label, ms, num])
 }
 
-export const tap = (target) => target.first().tap({ timeout: 6000 })
+/** A touch on a phone layout, a click on a desktop one. */
+export async function tap(target) {
+  try {
+    await target.first().tap({ timeout: 6000 })
+  } catch (e) {
+    if (!/hasTouch/.test(String(e.message))) throw e
+    await target.first().click({ timeout: 6000 })
+  }
+}
 
 export async function typeSlowly(target, text, delay = 85) {
-  await target.first().tap({ timeout: 6000 })
+  await tap(target)
   await target.first().pressSequentially(text, { delay })
 }
 

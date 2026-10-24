@@ -1,0 +1,35 @@
+{
+  "titleCard": 7.5,
+  "endCard": 9.0,
+  "intro": { "text": "Hi there. Here is a quick tour of Brewline, where every coffee order lives.", "at": 1 },
+  "outro": { "text": "That's Brewline. Fresh orders, shipped fast.", "at": 1 },
+  "scenes": [
+    {
+      "id": "overview",
+      "title": "Your orders",
+      "lines": [
+        { "text": "This is your orders board.", "hold": 0.8 },
+        { "text": "The counters at the top show what is waiting to ship.", "hold": 1.5 },
+        { "text": "New orders are marked in yellow.", "hold": 1.5 }
+      ]
+    },
+    {
+      "id": "ship",
+      "title": "Ship an order",
+      "lines": [
+        { "text": "Click any order to open it.", "hold": 1.2 },
+        { "text": "Then click Mark shipped.", "hold": 1.4 },
+        { "text": "The customer is notified, and the counters update.", "hold": 2.0 }
+      ]
+    },
+    {
+      "id": "create",
+      "title": "Create an order",
+      "lines": [
+        { "text": "Phone order? Click New order.", "hold": 1.0 },
+        { "text": "Type the name, and click Create order.", "hold": 3.0 },
+        { "text": "It lands at the top of the board.", "hold": 1.5 }
+      ]
+    }
+  ]
+}

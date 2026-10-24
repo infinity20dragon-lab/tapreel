@@ -8,6 +8,8 @@
 //   tapreel narrate [flags]          render the narration (--synth-only, --mix-only, --redo-flagged)
 //   tapreel record [--scenes 1,3]    record the app, scene by scene, against the timeline
 //   tapreel build [clips|assets|compose]  compose the film
+//   tapreel voice list|presets|create|audition|use   choose the narrator: man, woman, teen, child, older...
+//   tapreel music [--style calm|bright|warm]  make a royalty-free background track
 //   tapreel check [film.mp4]         transcribe the finished film against the script
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, writeFileSync, readFileSync, appendFileSync } from 'node:fs'
@@ -58,9 +60,13 @@ if (cmd === 'init') {
   await record({ scenes: typeof s === 'string' ? s.split(',').map(Number) : undefined })
 } else if (cmd === 'build') {
   run('build-video.mjs', rest)
+} else if (cmd === 'voice') {
+  run('voice.mjs', rest)
+} else if (cmd === 'music') {
+  run('make-music.mjs', rest)
 } else if (cmd === 'check') {
   run('check-film-audio.mjs', rest)
 } else {
-  console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(2, 14).join('\n').replace(/^\/\/ ?/gm, ''))
+  console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(2, 16).join('\n').replace(/^\/\/ ?/gm, ''))
   process.exit(cmd ? 1 : 0)
 }

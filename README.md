@@ -7,13 +7,19 @@
 Tapreel drives your app in a real browser (Playwright), records it, adds tap ripples and callouts, narrates every step with a local voice engine, and composes the finished video with chapters, captions, an intro and an outro with a QR code.
 
 ### See it
-A 67-second sample film of an imaginary plant-care app, made entirely with Tapreel (voice, captions, recording, intro and outro):
+Two sample films of imaginary apps, made entirely with Tapreel (voice, music, captions, recording, intro and outro).
 
-[![Sample film preview](docs/demo-preview.gif)](docs/demo-pocket-plants.mp4)
+**Phone app** ([Pocket Plants](examples/pocket-plants), man's voice, calm music):
 
-[Watch the full film (mp4)](docs/demo-pocket-plants.mp4). The app, script and scenes behind it are in [`examples/pocket-plants`](examples/pocket-plants).
+[![Phone sample preview](docs/demo-preview.gif)](docs/demo-pocket-plants.mp4)
 
-Status: 0.1.0. Web apps and PWAs, phone-shaped layout. Desktop-window layout, Electron and native apps are not supported yet.
+**Desktop app** ([Brewline](examples/brewline), woman's voice, warm music):
+
+[![Desktop sample preview](docs/demo-desktop-preview.gif)](docs/demo-brewline-desktop.mp4)
+
+Full films: [phone (mp4)](docs/demo-pocket-plants.mp4) · [desktop (mp4)](docs/demo-brewline-desktop.mp4).
+
+Status: 0.1.0. Web apps and PWAs, in a phone layout or a desktop-window layout. Electron and native apps are not supported yet.
 
 ## What you need
 Tapreel asks before installing anything. If a required tool is declined, Tapreel cannot run.
@@ -47,6 +53,22 @@ tapreel build         # compose the film
 tapreel check         # transcribe the film and compare it with the script
 ```
 (`tapreel` is `node <plugin>/bin/tapreel.mjs`.) As a plugin, ask your coding assistant for "a how-to video of my app" and the `tapreel-make` skill walks through it.
+
+## Choose the voice
+Pick a narrator that fits the app: man, woman, teenager, child, older voice, with an accent if you like.
+```
+tapreel voice presets                          # man-young, woman-warm, teen-girl, boy, girl, man-elder, ...
+tapreel voice create woman-warm --use          # design it and put it in the config
+tapreel voice audition <id>                    # render a short sample to listen to first
+tapreel voice list                             # voices VoiceStudio already has
+```
+Designed voices are synthetic and modelled on no real person. To use a real person's voice, clone it in VoiceStudio from a recording of someone who has agreed to it, then `tapreel voice use <id>`.
+
+## Layouts
+`device.kind` in the config: `phone` (default, a device frame) or `desktop` (set `viewport` to 1280x720, `deviceScaleFactor` 1.5, `isMobile` and `hasTouch` false). On desktop, `ui.tap` clicks instead of touching.
+
+## Background music
+Set `music.file` to a track you have the rights to, or make a royalty-free one: `tapreel music --style calm|bright|warm`. Music sits under the narration (it is ducked while the voice speaks) and swells in the intro and outro. Settings: `volumeDb` (default -20), `duck`, `fadeIn`, `fadeOut`.
 
 ## Permissions and safety
 The recorder operates a real app, so:

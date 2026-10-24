@@ -1,0 +1,20 @@
+{
+  "slug": "brewline-how-to",
+  "app": { "name": "Brewline", "subtitle": "Orders walkthrough", "url": "https://brewline.example", "org": "A Tapreel desktop sample", "icon": "☕" },
+  "introChips": ["See your orders", "Ship in one click", "Create orders"],
+  "outroChips": ["Ship", "Create", "Repeat"],
+  "outroHelp": "An imaginary app, filmed with Tapreel.",
+  "brand": { "accent": "#b45f1f", "accentLight": "#fcd9b0", "glow": "#f59e0b", "bg": "#1a1009", "muted": "#c4a98a" },
+  "voice": { "profileId": "", "language": "English" },
+  "device": { "kind": "desktop", "viewport": { "width": 1280, "height": 720 }, "deviceScaleFactor": 1.5, "isMobile": false, "hasTouch": false, "locale": "en-US" },
+  "music": { "file": "music-warm.wav", "volumeDb": -20, "duck": true },
+  "masks": [],
+  "access": {
+    "mode": "public",
+    "baseUrl": "http://localhost:4322",
+    "allowedOrigins": ["http://localhost:4322"],
+    "accountIsDemo": false,
+    "dataChanges": "none",
+    "headless": true
+  }
+}

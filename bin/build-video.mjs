@@ -24,8 +24,16 @@ const FPS = 30
 const B = cfg.brand
 const NAVY = hex(B.bg)
 const APP = cfg.app
-const SCREEN = { x: 230, y: 70, w: 434, h: 940 } // where the phone screen sits on the 1920x1080 canvas
-const CAP_X = 820 // left edge of the caption column
+// Layout on the 1920x1080 canvas. Phone: a device frame on the left, captions on the right.
+// Desktop: a window on the left, a narrower caption column on the right, headings above the window.
+const DESK = cfg.device.kind === 'desktop'
+const vp = cfg.device.viewport
+const CLIP = { w: vp.width * cfg.device.deviceScaleFactor, h: vp.height * cfg.device.deviceScaleFactor }
+const L = DESK
+  ? { screen: { x: 60, y: 170, w: 1230, h: 692 }, capX: 1340, headX: 60, radius: 14, bezel: 10, capSize: 52, capMarginR: 60, titleSize: 84, eyebrowSize: 30 }
+  : { screen: { x: 230, y: 70, w: 434, h: 940 }, capX: 820, headX: 820, radius: 48, bezel: 14, capSize: 68, capMarginR: 150, titleSize: 112, eyebrowSize: 34 }
+const SCREEN = L.screen
+const CAP_X = L.capX
 const timeline = () => JSON.parse(readFileSync(join(videoDir, 'timeline.json'), 'utf8'))
 const pad2 = (n) => String(n).padStart(2, '0')
 
@@ -44,7 +52,7 @@ export function buildClip(id) {
   writeFileSync(join(dir, 'frames.ffconcat'), lines.join('\n') + '\n')
   ffmpeg([
     '-f', 'concat', '-safe', '0', '-i', join(dir, 'frames.ffconcat'),
-    '-vf', `fps=${FPS},scale=780:1688:flags=lanczos,format=yuv420p`,
+    '-vf', `fps=${FPS},scale=${CLIP.w}:${CLIP.h}:flags=lanczos,format=yuv420p`,
     '-t', duration.toFixed(3), '-c:v', 'libx264', '-crf', '12', '-preset', 'veryfast', '-r', String(FPS), join(dir, 'raw.mp4'),
   ])
   return join(dir, 'raw.mp4')
@@ -69,18 +77,18 @@ function bgHtml(n, total, title) {
   return `<body style="margin:0;width:1920px;height:1080px;overflow:hidden;font-family:${FONT};color:#fff;background:#${NAVY}">
   <div style="position:absolute;inset:0;background:radial-gradient(900px 900px at 450px 540px,${rgba(B.accent,.42)},${rgba(B.accent,0)} 70%),linear-gradient(135deg,#${NAVY},#${NAVY} 60%,#${NAVY})"></div>
   <div style="position:absolute;left:0;top:0;bottom:0;width:10px;background:${B.accent}"></div>
-  <div style="position:absolute;left:${CAP_X}px;top:30px;display:flex;align-items:center;gap:14px;font-size:30px;font-weight:700">
+  <div style="position:absolute;left:${L.headX}px;top:30px;display:flex;align-items:center;gap:14px;font-size:30px;font-weight:700">
     <span style="width:46px;height:46px;border-radius:14px;background:${B.accent};display:inline-flex;align-items:center;justify-content:center;font-size:26px">${esc(APP.icon)}</span>
     <span>${esc(APP.name)} <span style="color:${B.muted};font-weight:500">· ${esc(APP.subtitle)}</span></span></div>
-  <div style="position:absolute;left:${CAP_X}px;top:104px;font-size:26px;letter-spacing:.16em;text-transform:uppercase;color:${B.accentLight};font-weight:700">Chapter ${n} of ${total} &nbsp;·&nbsp; <span style="color:#e2e8f0">${title}</span></div>
-  <div style="position:absolute;left:${CAP_X}px;bottom:62px;display:flex;gap:10px;align-items:center">${pills}</div>
+  <div style="position:absolute;left:${L.headX}px;top:104px;font-size:26px;letter-spacing:.16em;text-transform:uppercase;color:${B.accentLight};font-weight:700">Chapter ${n} of ${total} &nbsp;·&nbsp; <span style="color:#e2e8f0">${title}</span></div>
+  <div style="position:absolute;left:${L.headX}px;bottom:62px;display:flex;gap:10px;align-items:center">${pills}</div>
   <div style="position:absolute;right:70px;bottom:52px;font-size:26px;color:${B.muted};letter-spacing:.04em">${esc(APP.url.replace(/^https?:\/\//, ''))}</div></body>`
 }
 
 const bezelHtml = () => {
-  const b = 14
+  const b = L.bezel
   return `<body style="margin:0;width:1920px;height:1080px;background:transparent;overflow:hidden">
-  <div style="position:absolute;left:${SCREEN.x - b}px;top:${SCREEN.y - b}px;width:${SCREEN.w}px;height:${SCREEN.h}px;border:${b}px solid #0a0f1c;border-radius:62px;box-shadow:0 0 0 2px #334155,0 40px 90px rgba(0,0,0,.6),0 0 120px ${rgba(B.accent,.18)}"></div></body>`
+  <div style="position:absolute;left:${SCREEN.x - b}px;top:${SCREEN.y - b}px;width:${SCREEN.w}px;height:${SCREEN.h}px;border:${b}px solid #0a0f1c;border-radius:${L.radius + L.bezel}px;box-shadow:0 0 0 2px #334155,0 40px 90px rgba(0,0,0,.6),0 0 120px ${rgba(B.accent,.18)}"></div></body>`
 }
 
 const introHtml = () => `<body style="margin:0;width:1920px;height:1080px;overflow:hidden;background:#${NAVY};font-family:${FONT};color:#fff">
@@ -149,6 +157,11 @@ async function renderAssets() {
     await page.setContent(bgHtml(i + 1, tl.scenes.length, s.title))
     await page.screenshot({ path: join(compose, `bg-${i + 1}.png`) })
   }
+  // Rounded-corner mask for the recorded screen: without it the square corners of the app poke out past the frame.
+  await page.setViewportSize({ width: SCREEN.w, height: SCREEN.h })
+  await page.setContent(`<body style="margin:0;background:#000"><div style="width:${SCREEN.w}px;height:${SCREEN.h}px;background:#fff;border-radius:${L.radius}px"></div></body>`)
+  await page.screenshot({ path: join(compose, 'mask.png') })
+  await page.setViewportSize({ width: 1920, height: 1080 })
   await page.setContent(bezelHtml())
   await page.screenshot({ path: join(compose, 'bezel.png'), omitBackground: true })
 
@@ -200,9 +213,9 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Cap,${cfg.fonts.caption},68,&H00FFFFFF,&H00FFFFFF,&H00000000,&H78000000,0,0,0,0,100,100,0,0,1,0,3,4,${CAP_X},150,0,1
-Style: Eyebrow,${cfg.fonts.ui},34,${assColor(B.accentLight)},${assColor(B.accentLight)},&H00000000,&H00000000,-1,0,0,0,100,100,6,0,1,0,0,4,${CAP_X},100,0,1
-Style: Title,${cfg.fonts.ui},112,&H00FFFFFF,&H00FFFFFF,&H00000000,&H78000000,-1,0,0,0,100,100,0,0,1,0,4,4,${CAP_X},100,0,1
+Style: Cap,${cfg.fonts.caption},${L.capSize},&H00FFFFFF,&H00FFFFFF,&H00000000,&H78000000,0,0,0,0,100,100,0,0,1,0,3,4,${CAP_X},${L.capMarginR},0,1
+Style: Eyebrow,${cfg.fonts.ui},${L.eyebrowSize},${assColor(B.accentLight)},${assColor(B.accentLight)},&H00000000,&H00000000,-1,0,0,0,100,100,6,0,1,0,0,4,${CAP_X},${L.capMarginR},0,1
+Style: Title,${cfg.fonts.ui},${L.titleSize},&H00FFFFFF,&H00FFFFFF,&H00000000,&H78000000,-1,0,0,0,100,100,0,0,1,0,4,4,${CAP_X},100,0,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -230,9 +243,9 @@ function composeScene(i) {
   ffmpeg(
     [
       '-loop', '1', '-framerate', String(FPS), '-t', dur.toFixed(3), '-i', `bg-${i + 1}.png`,
-      '-i', join('..', s.id, 'raw.mp4'), '-i', 'bezel.png',
+      '-i', join('..', s.id, 'raw.mp4'), '-i', 'bezel.png', '-i', 'mask.png',
       '-filter_complex',
-      `[1:v]scale=${SCREEN.w}:${SCREEN.h}:flags=lanczos[ph];[0:v][ph]overlay=${SCREEN.x}:${SCREEN.y}[a];[a][2:v]overlay=0:0[b];` +
+      `[1:v]scale=${SCREEN.w}:${SCREEN.h}:flags=lanczos,format=yuva420p[sc];[3:v]scale=${SCREEN.w}:${SCREEN.h},format=gray[mk];[sc][mk]alphamerge[ph];[0:v][ph]overlay=${SCREEN.x}:${SCREEN.y}:format=auto[a];[a][2:v]overlay=0:0[b];` +
         `[b]subtitles=captions-${i + 1}.ass:fontsdir=fonts,fade=t=in:st=0:d=0.4:color=0x${NAVY},fade=t=out:st=${(dur - 0.4).toFixed(3)}:d=0.4:color=0x${NAVY},format=yuv420p[v]`,
       '-map', '[v]', '-t', dur.toFixed(3), '-r', String(FPS), '-c:v', 'libx264', '-crf', '16', '-preset', 'medium', `scene-${i + 1}.mp4`,
     ],
@@ -279,10 +292,18 @@ function composeAll() {
     ffmpeg(['-f', 'concat', '-safe', '0', '-i', 'film.txt', '-c:v', 'libx264', '-crf', '15', '-preset', 'medium', '-pix_fmt', 'yuv420p', '-r', String(FPS), 'film-video.mp4'], { cwd: compose })
   }
   const master = join(audioDir, `${cfg.slug}.narration.wav`)
+  const music = cfg.music?.file ? resolve(videoDir, cfg.music.file) : ''
+  if (cfg.music?.file && !existsSync(music)) throw new Error(`music.file not found: ${music} (make one with: tapreel music)`)
+  // Music sits under the voice and swells in the intro and outro: it is ducked by the narration, never the other way round.
+  const mixGraph = music
+    ? `[1:a]asplit=2[n1][n2];[2:a]aloop=loop=-1:size=2000000000,atrim=0:${tl.filmEnd.toFixed(3)},asetpts=PTS-STARTPTS,volume=${cfg.music.volumeDb}dB,afade=t=in:d=${cfg.music.fadeIn},afade=t=out:st=${(tl.filmEnd - cfg.music.fadeOut).toFixed(3)}:d=${cfg.music.fadeOut}[m];` +
+      (cfg.music.duck ? `[m][n2]sidechaincompress=threshold=0.02:ratio=10:attack=20:release=600:makeup=1[md];` : `[n2]anullsink;[m]acopy[md];`) +
+      `[n1][md]amix=inputs=2:normalize=0:duration=first,afade=t=out:st=${(tl.filmEnd - 1.2).toFixed(3)}:d=1.2,${loudnorm()}[a]`
+    : `[1:a]afade=t=out:st=${(tl.filmEnd - 1.2).toFixed(3)}:d=1.2,${loudnorm()}[a]`
   ffmpeg(
     [
-      '-i', 'film-video.mp4', '-i', master,
-      '-filter_complex', `[1:a]afade=t=out:st=${(tl.filmEnd - 1.2).toFixed(3)}:d=1.2,${loudnorm()}[a]`,
+      '-i', 'film-video.mp4', '-i', master, ...(music ? ['-i', music] : []),
+      '-filter_complex', mixGraph,
       '-map', '0:v', '-map', '[a]', '-t', tl.filmEnd.toFixed(3), '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', join(out, `${cfg.slug}.mp4`),
     ],
     { cwd: compose },

@@ -18,8 +18,11 @@ const DEFAULTS = {
   qrLabel: 'Scan to open',
   brand: { accent: '#2563eb', accentLight: '#bfdbfe', glow: '#60a5fa', bg: '#0b1220', muted: '#94a3b8' },
   fonts: { caption: 'Segoe UI Semibold', ui: 'Segoe UI', files: ['segoeui.ttf', 'segoeuib.ttf', 'seguisb.ttf'], dir: 'C:/Windows/Fonts' },
-  device: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'en-US' },
+  // kind: 'phone' (390x844 in a device frame) or 'desktop' (set viewport e.g. 1280x720, deviceScaleFactor 1.5, isMobile/hasTouch false)
+  device: { kind: 'phone', viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'en-US' },
   voice: { profileId: '', language: 'English' },
+  // music.file: a track you have the rights to (path relative to the tapreel folder), or one made by `tapreel music`.
+  music: { file: '', volumeDb: -20, duck: true, fadeIn: 2, fadeOut: 3 },
   render: {},
   access: {
     mode: 'demo-account', // demo-account | public

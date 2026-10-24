@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Brewline</title>
+<style>
+  *{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,sans-serif;background:#f6f1ea;color:#2b1d12;display:flex;height:100vh;overflow:hidden}
+  nav{width:220px;background:#2b1d12;color:#f3e6d5;padding:22px 16px;flex:none}nav h1{font-size:24px;margin:0 0 26px}
+  nav a{display:block;padding:11px 14px;border-radius:10px;margin-bottom:6px;font-weight:600;color:#d9c3a8}nav a.on{background:#4a3220;color:#fff}
+  main{flex:1;padding:26px 30px;overflow:hidden;position:relative}
+  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.top h2{margin:0;font-size:28px}
+  .stats{display:flex;gap:14px;margin-bottom:20px;width:fit-content}.stat{background:#fff;border-radius:14px;padding:14px 20px;min-width:170px;box-shadow:0 1px 6px rgba(60,30,10,.08)}
+  .stat b{font-size:30px;display:block}.stat span{opacity:.65;font-size:14px}
+  button{font:inherit;cursor:pointer}.primary{background:#b45f1f;color:#fff;border:0;border-radius:10px;padding:12px 20px;font-weight:700;font-size:16px}
+  .ghost{background:#efe3d3;color:#4a3220;border:0;border-radius:10px;padding:12px 20px;font-weight:700;font-size:16px}
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(60,30,10,.08)}
+  th{text-align:left;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:#8a6d52;padding:12px 16px;background:#fbf7f1}td{padding:14px 16px;border-top:1px solid #f0e6d8}
+  tr.row{cursor:pointer}tr.row:hover td{background:#fdf9f3}tr.sel td{background:#fbeede}
+  .pill{padding:5px 12px;border-radius:99px;font-weight:700;font-size:13px}.new{background:#fde68a;color:#78350f}.shipped{background:#d1fae5;color:#065f46}
+  aside{position:absolute;right:0;top:0;bottom:0;width:340px;background:#fff;padding:26px;box-shadow:-8px 0 30px rgba(60,30,10,.12);transform:translateX(100%);transition:transform .25s}
+  aside.open{transform:none}aside h3{margin:0 0 4px;font-size:22px}aside p{opacity:.7;margin:0 0 18px}aside .primary{width:100%;margin-top:14px}
+  .toast{position:absolute;left:30px;bottom:24px;background:#065f46;color:#fff;padding:12px 18px;border-radius:12px;font-weight:700}
+  .modal{position:absolute;inset:0;background:rgba(43,29,18,.45);display:flex;align-items:center;justify-content:center}
+  .box{background:#fff;border-radius:18px;padding:28px;width:420px}.box h3{margin:0 0 14px;font-size:22px}label{font-weight:700;display:block;margin:12px 0 6px}
+  input,select{width:100%;font-size:17px;padding:11px;border-radius:10px;border:2px solid #e3d2bd;background:#fff}.acts{display:flex;gap:10px;margin-top:20px}.acts button{flex:1}
+</style></head><body>
+<nav><h1>☕ Brewline</h1><a class="on">Orders</a><a>Roasts</a><a>Customers</a><a>Reports</a></nav>
+<main id="m"></main>
+<script>
+  const orders=[{id:1042,who:'Harbor Cafe',item:'Ethiopia Guji, 5 kg',st:'New'},{id:1041,who:'Pine Street Bakery',item:'House Blend, 10 kg',st:'New'},{id:1040,who:'Maya R.',item:'Colombia Huila, 1 kg',st:'Shipped'},{id:1039,who:'Northside Books',item:'Decaf, 2 kg',st:'Shipped'}]
+  let sel=null,toast='',modal=false,nextId=1043
+  const esc=(s)=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))
+  function draw(){
+    const open=orders.filter(o=>o.st==='New').length
+    document.getElementById('m').innerHTML='<div class="top"><h2>Orders</h2><button class="primary" id="newo">+ New order</button></div>'+
+    '<div class="stats"><div class="stat"><b>'+open+'</b><span>waiting to ship</span></div><div class="stat"><b>'+(orders.length-open)+'</b><span>shipped this week</span></div></div>'+
+    '<table><thead><tr><th>Order</th><th>Customer</th><th>Item</th><th>Status</th></tr></thead><tbody>'+orders.map(o=>'<tr class="row'+(sel===o.id?' sel':'')+'" data-id="'+o.id+'"><td>#'+o.id+'</td><td>'+esc(o.who)+'</td><td>'+esc(o.item)+'</td><td><span class="pill '+(o.st==='New'?'new':'shipped')+'">'+o.st+'</span></td></tr>').join('')+'</tbody></table>'+
+    '<aside id="panel" class="'+(sel?'open':'')+'">'+(sel?(()=>{const o=orders.find(x=>x.id===sel);return '<h3>Order #'+o.id+'</h3><p>'+esc(o.who)+' · '+esc(o.item)+'</p>'+(o.st==='New'?'<button class="primary" id="ship">📦 Mark shipped</button>':'<span class="pill shipped">Shipped</span>')+'<button class="ghost" id="close" style="width:100%;margin-top:10px">Close</button>'})():'')+'</aside>'+
+    (toast?'<div class="toast">'+esc(toast)+'</div>':'')+
+    (modal?'<div class="modal"><div class="box"><h3>New order</h3><label for="who">Customer</label><input id="who" autocomplete="off"><label for="item">Roast</label><select id="item"><option>House Blend</option><option>Ethiopia Guji</option><option>Colombia Huila</option></select><div class="acts"><button class="ghost" id="cancel">Cancel</button><button class="primary" id="create">Create order</button></div></div></div>':'')
+    document.querySelectorAll('tr.row').forEach(r=>r.onclick=()=>{sel=+r.dataset.id;toast='';draw()})
+    document.getElementById('newo').onclick=()=>{modal=true;draw()}
+    const s=document.getElementById('ship');if(s)s.onclick=()=>{const o=orders.find(x=>x.id===sel);o.st='Shipped';toast='Order #'+o.id+' marked shipped. Customer notified.';sel=null;draw()}
+    const c=document.getElementById('close');if(c)c.onclick=()=>{sel=null;draw()}
+    const ca=document.getElementById('cancel');if(ca)ca.onclick=()=>{modal=false;draw()}
+    const cr=document.getElementById('create');if(cr)cr.onclick=()=>{const w=document.getElementById('who').value.trim()||'New customer';orders.unshift({id:nextId++,who:w,item:document.getElementById('item').value+', 2 kg',st:'New'});modal=false;toast='Order created for '+w+'.';draw()}
+  }
+  draw()
+</script></body></html>
