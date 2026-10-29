@@ -19,7 +19,7 @@ Two sample films of imaginary apps, made entirely with Tapreel (voice, music, ca
 
 Full films: [phone (mp4)](docs/demo-pocket-plants.mp4) · [desktop (mp4)](docs/demo-brewline-desktop.mp4).
 
-Status: 0.1.0. Web apps and PWAs, in a phone layout or a desktop-window layout. Electron and native apps are not supported yet.
+Status: 0.1.1. Web apps and PWAs, in a phone layout or a desktop-window layout. Electron and native apps are not supported yet.
 
 ## What you need
 Tapreel asks before installing anything. If a required tool is declined, Tapreel cannot run.
@@ -78,8 +78,11 @@ The recorder operates a real app, so:
 - If a walkthrough changes data, you say so (`access.dataChanges`) and supply `hooks.mjs` that snapshots and restores it.
 - The screen is recorded, so sample names can be swapped on screen with `masks` in the config.
 
+## Chapter cards
+Each chapter opens with its number and title beside the screen. Tapreel wraps the title itself, measuring the words with the caption font's own letter widths: as few lines as the column allows, split so the lines are about even ("A meeting, / in public", not "A meeting, in / public"), set at a heading's line height and centred as one block under "Chapter n of N". Long titles grow evenly and never run into the chapter number.
+
 ## Audio quality rules
-No stretched or cut audio, breath and stray-noise rejection, a frozen timeline so re-narrating never moves the footage, transcript checks and -16 LUFS loudness. See `skills/tapreel-qa`.
+No stretched or cut audio, breath and stray-noise rejection, a frozen timeline so re-narrating never moves the footage, transcript checks and -16 LUFS loudness. The quiet in-breath the voice engine often takes before a phrase's first word is silenced when the narration is mixed (never cut, so timing does not move). See `skills/tapreel-qa`.
 
 ## License
 MIT

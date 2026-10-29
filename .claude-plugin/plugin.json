@@ -1,6 +1,6 @@
 {
   "name": "tapreel",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Narrated how-to videos of any web app: record the real app, add a natural local voice, and get a captioned film.",
   "author": { "name": "ITforFire" },
   "license": "MIT",
