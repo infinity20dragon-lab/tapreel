@@ -16,6 +16,7 @@ import { spawnSync } from 'node:child_process'
 import { ffmpeg, ffprobePath } from './lib/ffmpeg.mjs'
 import { root, videoDir, audioDir } from './lib/video-script.mjs'
 import { cfg, workDir, hex, rgba, assColor } from './lib/config.mjs'
+import { loadFont, wrap } from './lib/font-metrics.mjs'
 
 export const work = workDir
 const compose = join(work, 'compose')
@@ -30,10 +31,13 @@ const DESK = cfg.device.kind === 'desktop'
 const vp = cfg.device.viewport
 const CLIP = { w: vp.width * cfg.device.deviceScaleFactor, h: vp.height * cfg.device.deviceScaleFactor }
 const L = DESK
-  ? { screen: { x: 60, y: 170, w: 1230, h: 692 }, capX: 1340, headX: 60, radius: 14, bezel: 10, capSize: 52, capMarginR: 60, titleSize: 84, eyebrowSize: 30 }
+  ? { screen: { x: 60, y: 170, w: 1230, h: 692 }, capX: 1340, headX: 60, radius: 14, bezel: 10, capSize: 52, capMarginR: 60, titleSize: 64, eyebrowSize: 30 }
   : { screen: { x: 230, y: 70, w: 434, h: 940 }, capX: 820, headX: 820, radius: 48, bezel: 14, capSize: 68, capMarginR: 150, titleSize: 112, eyebrowSize: 34 }
 const SCREEN = L.screen
 const CAP_X = L.capX
+// Chapter titles are bold; measure them with the bold face when the config ships one (an estimate otherwise).
+const boldFile = cfg.fonts.files.find((f) => /bold|b\.ttf$/i.test(f) && existsSync(join(cfg.fonts.dir, f)))
+const titleWidth = boldFile ? loadFont(join(cfg.fonts.dir, boldFile)) : (t, size) => t.length * size * 0.56
 const timeline = () => JSON.parse(readFileSync(join(videoDir, 'timeline.json'), 'utf8'))
 const pad2 = (n) => String(n).padStart(2, '0')
 
@@ -222,11 +226,19 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 `
   const lines = []
   const lead = Math.max(1.2, cues[0].start - s.start - 0.1)
-  // The title hangs from a fixed top line and the eyebrow sits on a baseline above it, so a title that wraps onto two or
-  // three lines grows downwards instead of into the eyebrow.
-  const titleTop = 470
-  lines.push(`Dialogue: 0,${assTime(0.1)},${assTime(lead)},Eyebrow,,0,0,0,,{\\an1\\pos(${CAP_X},${titleTop - 22})\\fad(300,400)}CHAPTER ${i + 1} OF ${tl.scenes.length}`)
-  lines.push(`Dialogue: 0,${assTime(0.1)},${assTime(lead)},Title,,0,0,0,,{\\an7\\pos(${CAP_X},${titleTop})\\fad(300,400)}${assEscape(s.title)}`)
+  // The film wraps the title itself and sets each line at a heading's line height (libass would space wrapped lines by the
+  // font's full line box, which reads loose). The block is centred on the frame with the eyebrow just above it, so a long
+  // title grows evenly and never into the eyebrow.
+  const titleLines = wrap(assEscape(s.title), titleWidth, L.titleSize, 1920 - CAP_X - L.capMarginR)
+  const lineH = Math.round(L.titleSize * 1.08)
+  const eyebrowGap = Math.round(L.eyebrowSize * 0.9)
+  const block = L.eyebrowSize + eyebrowGap + titleLines.length * lineH
+  const top = Math.round(540 - block / 2)
+  const titleTop = top + L.eyebrowSize + eyebrowGap
+  lines.push(`Dialogue: 0,${assTime(0.1)},${assTime(lead)},Eyebrow,,0,0,0,,{\\an7\\q2\\pos(${CAP_X},${top})\\fad(300,400)}CHAPTER ${i + 1} OF ${tl.scenes.length}`)
+  titleLines.forEach((t, k) => {
+    lines.push(`Dialogue: 0,${assTime(0.1)},${assTime(lead)},Title,,0,0,0,,{\\an7\\q2\\pos(${CAP_X},${titleTop + k * lineH})\\fad(300,400)}${t}`)
+  })
   for (const c of cues) {
     lines.push(`Dialogue: 0,${assTime(c.start - s.start)},${assTime(c.end - s.start)},Cap,,0,0,0,,{\\fad(140,160)}${assEscape(c.text)}`)
   }
