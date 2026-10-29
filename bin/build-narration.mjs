@@ -23,7 +23,7 @@ import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { loadScript, phrases, VOICE, RENDER, root, audioDir, videoDir, syllables } from './lib/video-script.mjs'
 import { cfg } from './lib/config.mjs'
-import { generate, transcribe, readWav, writeWav, speechBounds, pitchSpread, judgeWords, noiseFloorDb, strayBursts, RATE } from './lib/voicestudio.mjs'
+import { generate, transcribe, readWav, writeWav, speechBounds, pitchSpread, judgeWords, noiseFloorDb, strayBursts, quietInhale, RATE } from './lib/voicestudio.mjs'
 import { ffmpeg } from './lib/ffmpeg.mjs'
 
 const args = new Set(process.argv.slice(2))
@@ -198,7 +198,7 @@ function mix() {
   const total = Math.ceil((tl.filmEnd + 1) * RATE)
   const master = new Float32Array(total)
   for (const c of tl.cueAudio) {
-    const w = readWav(readFileSync(resolve(audioDir, c.file))).samples
+    const w = quietInhale(readWav(readFileSync(resolve(audioDir, c.file))).samples)
     const at = Math.round((c.start - PAD) * RATE)
     for (let i = 0; i < w.length; i++) if (at + i >= 0 && at + i < total) master[at + i] += w[i]
   }

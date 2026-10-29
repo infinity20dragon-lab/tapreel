@@ -297,6 +297,33 @@ export function cleanEnds(samples, firstStart, lastEnd, rate = RATE) {
 }
 
 
+/**
+ * Silences the breath the voice takes before its first word, keeping the phrase's length (and so its timing on the film).
+ * The intake is a long, quiet plateau (about -45 to -58 dB for a tenth of a second or more); a word's own onset rises from
+ * silence to speech level within a few frames, and a hissy "s" or "f" is far louder than -38 dB, so both are left alone.
+ */
+export function quietInhale(samples, rate = RATE) {
+  const w = Math.round(rate * 0.01)
+  const n = Math.floor(samples.length / w)
+  const db = []
+  for (let i = 0; i < n; i++) {
+    let sq = 0
+    for (let k = i * w; k < (i + 1) * w; k++) sq += samples[k] * samples[k]
+    db.push(10 * Math.log10(sq / w + 1e-12))
+  }
+  const speech = db.findIndex((x) => x > -35)
+  if (speech < 0) return samples
+  let onset = speech
+  while (onset > 0 && speech - onset < 8 && db[onset - 1] > -45) onset--
+  const lead = db.slice(0, onset)
+  if (lead.filter((x) => x > -60).length < 8 || Math.max(...lead) > -38) return samples
+  const out = Float32Array.from(samples)
+  const end = Math.max(0, (onset - 2) * w)
+  const fade = 2 * w
+  for (let i = 0; i < end + fade && i < out.length; i++) out[i] *= i < end ? 0 : (i - end) / fade
+  return out
+}
+
 // ---- spotting the engine's stray bursts (never editing the audio) --------------------------------
 /**
  * The voice engine sometimes puts a separate hissy burst before the first word or after the last, about 0.1-0.4 s long

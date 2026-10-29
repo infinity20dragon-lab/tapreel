@@ -222,8 +222,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 `
   const lines = []
   const lead = Math.max(1.2, cues[0].start - s.start - 0.1)
-  lines.push(`Dialogue: 0,${assTime(0.1)},${assTime(lead)},Eyebrow,,0,0,0,,{\\an4\\pos(${CAP_X},430)\\fad(300,400)}CHAPTER ${i + 1} OF ${tl.scenes.length}`)
-  lines.push(`Dialogue: 0,${assTime(0.1)},${assTime(lead)},Title,,0,0,0,,{\\an4\\pos(${CAP_X},540)\\fad(300,400)}${assEscape(s.title)}`)
+  // The title hangs from a fixed top line and the eyebrow sits on a baseline above it, so a title that wraps onto two or
+  // three lines grows downwards instead of into the eyebrow.
+  const titleTop = 470
+  lines.push(`Dialogue: 0,${assTime(0.1)},${assTime(lead)},Eyebrow,,0,0,0,,{\\an1\\pos(${CAP_X},${titleTop - 22})\\fad(300,400)}CHAPTER ${i + 1} OF ${tl.scenes.length}`)
+  lines.push(`Dialogue: 0,${assTime(0.1)},${assTime(lead)},Title,,0,0,0,,{\\an7\\pos(${CAP_X},${titleTop})\\fad(300,400)}${assEscape(s.title)}`)
   for (const c of cues) {
     lines.push(`Dialogue: 0,${assTime(c.start - s.start)},${assTime(c.end - s.start)},Cap,,0,0,0,,{\\fad(140,160)}${assEscape(c.text)}`)
   }
